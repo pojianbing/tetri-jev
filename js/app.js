@@ -76,6 +76,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnInject4 = document.getElementById('btn-inject-4');
   const btnClearObstacles = document.getElementById('btn-clear-obstacles');
 
+  // 决策自由度模式与全量概率折叠 DOM
+  const candModeButtons = document.querySelectorAll('.cand-mode-btn');
+  const candidateModeBadge = document.getElementById('candidate-mode-badge');
+  const candidateCountTag = document.getElementById('candidate-count-tag');
+  const btnToggleAllProbs = document.getElementById('btn-toggle-all-probs');
+  const moreCandidatesCount = document.getElementById('more-candidates-count');
+  let currentCandidateMode = 'top4';
+  let showAllCandidates = false;
+  let lastSingleDecisionData = null;
+
   // 单人 Jev 监视器
   const decisionLatency = document.getElementById('decision-latency');
   const metricModel = document.getElementById('metric-model');
@@ -395,6 +405,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       metricBoardSafety.innerHTML = `<span style="color: ${color};">${label} (${Number(scoreVal).toFixed(2)})</span>`;
     }
 
+    if (candidateCountTag) {
+      const isFull = decisionData.candidateMode === 'full' || candidates.length > 4;
+      candidateCountTag.textContent = isFull ? `(${candidates.length} 选项 · 零预选全息)` : `(4 选项 · 精炼推荐)`;
+      candidateCountTag.style.color = isFull ? '#c084fc' : 'var(--secondary-cyan)';
+    }
+
     if (answers.best_placement) {
       const conf = answers.best_placement.confidence;
       const confPct = Math.round(conf * 100);
@@ -407,32 +423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ? 'linear-gradient(90deg, #6366f1, #3b82f6)'
           : 'linear-gradient(90deg, #f59e0b, #ef4444)';
 
-      const probs = answers.best_placement.probabilities || {};
-      const chosenId = answers.best_placement.choice;
-
-      probabilitiesContainer.innerHTML = '';
-      candidates.forEach((cand) => {
-        const p = probs[cand.id] || 0;
-        const pPct = (p * 100).toFixed(1);
-        const isSelected = cand.id === chosenId;
-
-        const item = document.createElement('div');
-        item.className = `prob-item ${isSelected ? 'chosen' : ''}`;
-        const f = cand.features;
-        const detailsText = `消行: ${f.lines_cleared} | 新空洞: ${f.new_holes_created} | 崎岖: ${f.bumpiness_after}`;
-
-        item.innerHTML = `
-          <div class="prob-fill" style="width: ${pPct}%"></div>
-          <div class="prob-content">
-            <div class="prob-top">
-              <span class="prob-title">${cand.id} (旋 ${f.rotation * 90}°, 列 ${f.target_column}) ${isSelected ? '<span class="chosen-badge">Jev 推荐选择</span>' : ''}</span>
-              <span class="prob-pct">${pPct}%</span>
-            </div>
-            <div class="prob-desc">${detailsText}</div>
-          </div>
-        `;
-        probabilitiesContainer.appendChild(item);
-      });
+      renderSingleProbabilities();
     }
 
     payloadDisplay.textContent = JSON.stringify(
@@ -451,6 +442,63 @@ document.addEventListener('DOMContentLoaded', async () => {
       null,
       2
     );
+  }
+
+  function renderSingleProbabilities() {
+    if (!lastSingleDecisionData || !lastSingleDecisionData.evalResult.answers.best_placement) return;
+    const { evalResult, candidates } = lastSingleDecisionData;
+    const answers = evalResult.answers;
+    const probs = answers.best_placement.probabilities || {};
+    const chosenId = answers.best_placement.choice;
+
+    // 智能排序：Jev 推荐落点排在第一位，其余候选按概率由高到低
+    const sortedCandidates = [...candidates].sort((a, b) => {
+      if (a.id === chosenId) return -1;
+      if (b.id === chosenId) return 1;
+      const pa = probs[a.id] || 0;
+      const pb = probs[b.id] || 0;
+      return pb - pa;
+    });
+
+    const isLargeList = sortedCandidates.length > 5;
+    const displayList = isLargeList && !showAllCandidates ? sortedCandidates.slice(0, 5) : sortedCandidates;
+
+    probabilitiesContainer.innerHTML = '';
+    displayList.forEach((cand) => {
+      const p = probs[cand.id] || 0;
+      const pPct = (p * 100).toFixed(1);
+      const isSelected = cand.id === chosenId;
+
+      const item = document.createElement('div');
+      item.className = `prob-item ${isSelected ? 'chosen' : ''}`;
+      const f = cand.features;
+      const detailsText = `消行: ${f.lines_cleared} | 新空洞: ${f.new_holes_created} | 崎岖: ${f.bumpiness_after}`;
+
+      item.innerHTML = `
+        <div class="prob-fill" style="width: ${pPct}%"></div>
+        <div class="prob-content">
+          <div class="prob-top">
+            <span class="prob-title">${cand.id} (旋 ${f.rotation * 90}°, 列 ${f.target_column}) ${isSelected ? '<span class="chosen-badge">Jev 推荐选择</span>' : ''}</span>
+            <span class="prob-pct">${pPct}%</span>
+          </div>
+          <div class="prob-desc">${detailsText}</div>
+        </div>
+      `;
+      probabilitiesContainer.appendChild(item);
+    });
+
+    if (btnToggleAllProbs) {
+      if (isLargeList) {
+        btnToggleAllProbs.style.display = 'flex';
+        if (showAllCandidates) {
+          btnToggleAllProbs.textContent = '收起其余候选落点 ▴';
+        } else {
+          btnToggleAllProbs.textContent = `展开查看其余 ${sortedCandidates.length - 5} 个候选落点 ▾`;
+        }
+      } else {
+        btnToggleAllProbs.style.display = 'none';
+      }
+    }
   }
 
   function updateSingleRunningStateUI(isRunning) {
@@ -747,6 +795,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   });
+
+  // 决策自由度模式切换 (精炼4选1 vs 零预裁全息自由)
+  candModeButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      candModeButtons.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.getAttribute('data-candidate-mode');
+      currentCandidateMode = mode;
+      singleAiController.setCandidateMode(mode);
+
+      if (candidateModeBadge) {
+        candidateModeBadge.textContent = mode === 'full' ? '🧠 全息自由 (零预选)' : '🎯 精炼 4 选 1';
+        candidateModeBadge.style.color = mode === 'full' ? '#c084fc' : 'var(--secondary-cyan)';
+        candidateModeBadge.style.borderColor = mode === 'full' ? 'rgba(192, 132, 252, 0.4)' : 'rgba(56, 189, 248, 0.25)';
+      }
+      if (candidateCountTag) {
+        candidateCountTag.textContent = mode === 'full' ? '(等待全息决策)' : '(4 选项 · 精炼推荐)';
+        candidateCountTag.style.color = mode === 'full' ? '#c084fc' : 'var(--secondary-cyan)';
+      }
+    });
+  });
+
+  // 展开/收起全量候选落点
+  if (btnToggleAllProbs) {
+    btnToggleAllProbs.addEventListener('click', () => {
+      showAllCandidates = !showAllCandidates;
+      renderSingleProbabilities();
+    });
+  }
 
   // 实时障碍注入事件监听
   function handleInjectObstacles(lines) {

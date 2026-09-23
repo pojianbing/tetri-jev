@@ -185,6 +185,17 @@
             <button class="speed-btn" data-speed="fast">极速冲分</button>
           </div>
         </div>
+
+        <div class="candidate-mode-control" style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <div style="font-size: 11px; color: var(--text-dim);">Jev 决策自由度 (模式选择)</div>
+            <span id="candidate-mode-badge" class="badge-mode-info">🎯 精炼 4 选 1</span>
+          </div>
+          <div class="cand-mode-buttons">
+            <button class="cand-mode-btn active" data-candidate-mode="top4" title="本地粗排前4个最优选项，超低时延 (~250ms)">🎯 精炼推荐 (4选1)</button>
+            <button class="cand-mode-btn" data-candidate-mode="full" title="零预剔除，全部 15~34 个合法落点 100% 完整交由 Jev 研判">🧠 全息自由 (零预选)</button>
+          </div>
+        </div>
       </div>
 
       <!-- JEV 云端认知型视器 -->
@@ -215,7 +226,10 @@
         </div>
 
         <div>
-          <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px;">Jev 返回的落点概率分布 (Choice Probabilities)</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 11px; color: var(--text-dim);">Jev 返回的落点概率分布 (Choice Probabilities)</div>
+            <span id="candidate-count-tag" style="font-size: 10px; color: var(--secondary-cyan); font-family: var(--font-mono);">(4 选项)</span>
+          </div>
           <div id="probabilities-container" class="probabilities-list">
             <!-- 初始占位/决策后动态填充 -->
             <div class="prob-item">
@@ -259,6 +273,9 @@
               </div>
             </div>
           </div>
+          <button id="btn-toggle-all-probs" class="btn-toggle-probs" style="display: none;">
+            展开查看其余 <span id="more-candidates-count">0</span> 个候选落点 ▾
+          </button>
         </div>
 
         <details class="payload-accordion">

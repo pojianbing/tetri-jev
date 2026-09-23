@@ -23,6 +23,7 @@
       this.isThinking = false;
       this.actionQueue = [];
       this.speedMode = 'normal'; // 'slow', 'normal', 'fast'
+      this.candidateMode = options.candidateMode || 'top4'; // 'top4' (4选1) | 'full' (零预裁全息决策)
       this.stepInterval = 45; // 动作执行间隔 (ms)
       this.timerId = null;
 
@@ -40,6 +41,12 @@
 
     setOpponent(opponentGame) {
       this.opponentGame = opponentGame;
+    }
+
+    setCandidateMode(mode) {
+      if (mode === 'top4' || mode === 'full') {
+        this.candidateMode = mode;
+      }
     }
 
     setEnabled(enabled) {
@@ -104,21 +111,34 @@
           return;
         }
 
-        // 1. 挑选合法候选落点（支持传入对手游戏感知）
-        const topCandidates = CandidateEvaluator.selectTopCandidatesForJev(game, 4, this.opponentGame);
-        if (topCandidates.length === 0) {
+        // 1. 挑选合法候选落点（支持 top4 精炼推荐 或 full 全息零预裁）
+        const candidatesToEvaluate = CandidateEvaluator.selectCandidatesForJev
+          ? CandidateEvaluator.selectCandidatesForJev(game, {
+              mode: this.candidateMode,
+              maxCandidates: 4,
+              opponentGame: this.opponentGame,
+            })
+          : CandidateEvaluator.selectTopCandidatesForJev(game, 4, this.opponentGame);
+
+        if (candidatesToEvaluate.length === 0) {
           this.game.tick();
           this.isThinking = false;
           return;
         }
 
         // 2. 打包成 TypeSafe Jev 规范的 State 与 Questions
-        const { state, criteria, candidates } = CandidateEvaluator.formatStateForJev(game, topCandidates, this.opponentGame);
+        const { state, criteria, candidates } = CandidateEvaluator.formatStateForJev(game, candidatesToEvaluate, this.opponentGame);
 
         const isBattle = Boolean(this.opponentGame);
-        const instructionsText = isBattle
+        let instructionsText = isBattle
           ? 'In this competitive Tetris battle, which candidate placement best balances offensive garbage-sending with defensive line-clearing to survive and defeat the opponent?'
           : 'Which candidate placement is the safest and most strategic for long-term survival in Tetris, minimizing created holes and maintaining a flat board?';
+
+        if (this.candidateMode === 'full') {
+          instructionsText = isBattle
+            ? 'In this Tetris battle with all unpruned placements provided, select the globally superior placement to outplay the opponent while managing incoming garbage:'
+            : 'Evaluating all unpruned legal candidate placements in full freedom mode, which candidate placement is the absolute best strategic choice for long-term survival?';
+        }
 
         const questions = {
           best_placement: {
@@ -159,6 +179,7 @@
             evalResult,
             chosenCandidate: targetPlacement,
             candidates,
+            candidateMode: this.candidateMode,
           });
         }
       } catch (err) {

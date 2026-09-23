@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/candidate-test.js && node test/ai-test.js && node test/battle-test.js && node test/obstacle-test.js"
+    "test": "node test/candidate-test.js && node test/ai-test.js && node test/battle-test.js && node test/obstacle-test.js && node test/full-ai-test.js"
   },
   "keywords": ["tetris", "typesafe-ai", "jev", "system-one", "battle-mode"],
   "author": "",

@@ -173,10 +173,27 @@
   }
 
   /**
-   * 提炼最具竞争力和多样化策略的候选落点供 Jev 评估
-   * 支持感知对手与待接收垃圾行（对战感知）
+   * 提炼候选落点供 Jev 评估
+   * @param {Object} game 游戏实例
+   * @param {Object|number} options 配置项或最大候选数
+   *   - mode: 'top4' | 'full' (默认 'top4'，'full' 为零预先剔除模式)
+   *   - maxCandidates: 数量上限 (当 mode 为 'top4' 时生效，默认 4)
+   *   - opponentGame: 对手游戏实例 (对战模式)
    */
-  function selectTopCandidatesForJev(game, maxCandidates = 4, opponentGame = null) {
+  function selectCandidatesForJev(game, options = {}) {
+    let mode = 'top4';
+    let maxCandidates = 4;
+    let opponentGame = null;
+
+    if (typeof options === 'number') {
+      maxCandidates = options;
+      opponentGame = arguments[2] || null;
+    } else if (options) {
+      mode = options.mode || 'top4';
+      maxCandidates = options.maxCandidates || 4;
+      opponentGame = options.opponentGame || null;
+    }
+
     const placements = getAllLegalPlacements(game);
     if (placements.length === 0) return [];
 
@@ -202,7 +219,7 @@
       const canceledGarbage = Math.min(pendingGarbage, attackLines);
       const sentAttack = Math.max(0, attackLines - canceledGarbage);
 
-      // 对战增强评分函数
+      // 对战增强评分函数 (仅用于 top4 模式粗排)
       p.heuristicScore =
         m.linesCleared * (isUrgentDefense ? 6.0 : 3.8) +
         canceledGarbage * 8.0 +
@@ -228,6 +245,23 @@
       };
     });
 
+    if (mode === 'full') {
+      // 全息零预裁模式：去重同等动作后，按物理落点几何顺序（旋转角度 -> 列坐标）全量返回，绝不丢弃任何选项！
+      const uniquePlacements = [];
+      const seenAction = new Set();
+      placements.sort((a, b) => (a.rotation !== b.rotation ? a.rotation - b.rotation : a.x - b.x));
+
+      for (const p of placements) {
+        const key = `${p.rotation}_${p.x}`;
+        if (!seenAction.has(key)) {
+          seenAction.add(key);
+          uniquePlacements.push(p);
+        }
+      }
+      return uniquePlacements;
+    }
+
+    // 精炼推荐模式 (Top-4)：按本地启发式评分粗排前 maxCandidates 个
     placements.sort((a, b) => b.heuristicScore - a.heuristicScore);
 
     const topPlacements = [];
@@ -243,6 +277,11 @@
     }
 
     return topPlacements;
+  }
+
+  // 保持向后兼容
+  function selectTopCandidatesForJev(game, maxCandidates = 4, opponentGame = null) {
+    return selectCandidatesForJev(game, { mode: 'top4', maxCandidates, opponentGame });
   }
 
   /**
@@ -334,6 +373,7 @@
     countWells,
     evaluateSimulatedGrid,
     getAllLegalPlacements,
+    selectCandidatesForJev,
     selectTopCandidatesForJev,
     formatStateForJev,
   };

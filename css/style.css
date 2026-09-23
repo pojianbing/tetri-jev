@@ -428,6 +428,50 @@ input:checked + .slider:before {
   border-color: rgba(37, 99, 235, 0.6);
 }
 
+/* 决策自由度模式选择胶囊 */
+.cand-mode-buttons {
+  display: flex;
+  gap: 6px;
+  background: #0b0e14;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cand-mode-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cand-mode-btn.active {
+  background: #1e2638;
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+}
+
+.badge-mode-info {
+  font-size: 10px;
+  color: var(--secondary-cyan);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
 .key-input {
   flex: 1;
   background: #0b0e14;
@@ -506,6 +550,47 @@ input:checked + .slider:before {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.probabilities-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.probabilities-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 2px;
+}
+
+.probabilities-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.btn-toggle-probs {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  background: #111622;
+  border: 1px dashed rgba(56, 189, 248, 0.3);
+  color: var(--secondary-cyan);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.btn-toggle-probs:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: var(--secondary-cyan);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
 }
 
 .prob-item {
