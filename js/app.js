@@ -70,6 +70,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const aiRunningState = document.getElementById('ai-running-state');
   const speedButtons = document.querySelectorAll('.speed-btn');
 
+  // 实时障碍注入 DOM
+  const btnInject1 = document.getElementById('btn-inject-1');
+  const btnInject2 = document.getElementById('btn-inject-2');
+  const btnInject4 = document.getElementById('btn-inject-4');
+  const btnClearObstacles = document.getElementById('btn-clear-obstacles');
+
   // 单人 Jev 监视器
   const decisionLatency = document.getElementById('decision-latency');
   const metricModel = document.getElementById('metric-model');
@@ -741,6 +747,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   });
+
+  // 实时障碍注入事件监听
+  function handleInjectObstacles(lines) {
+    if (singleGame.gameOver) {
+      singleGame.reset();
+    }
+    singleGame.injectGarbage(lines);
+
+    // 棋盘震颤视觉反馈
+    singleCanvas.classList.remove('shake-animation');
+    void singleCanvas.offsetWidth;
+    singleCanvas.classList.add('shake-animation');
+  }
+
+  if (btnInject1) btnInject1.addEventListener('click', () => handleInjectObstacles(1));
+  if (btnInject2) btnInject2.addEventListener('click', () => handleInjectObstacles(2));
+  if (btnInject4) btnInject4.addEventListener('click', () => handleInjectObstacles(4));
+  if (btnClearObstacles) {
+    btnClearObstacles.addEventListener('click', () => {
+      singleGame.clearObstacles();
+    });
+  }
 
   // 保存 API Key
   btnSaveKey.addEventListener('click', async () => {

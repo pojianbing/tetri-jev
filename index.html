@@ -74,6 +74,23 @@
         </div>
       </div>
 
+      <!-- 实时障碍注入 (Live Obstacle Injector) -->
+      <div class="card obstacle-card">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span>⚡ 实时障碍注入</span>
+          <span style="font-size: 11px; color: var(--secondary-cyan); font-weight: normal;">残局抗压演练</span>
+        </div>
+        <p style="font-size: 11px; color: var(--text-dim); line-height: 1.4; margin-bottom: 10px;">
+          点击立即从底部升起带孔障碍行，随时检验控盘抗压能力或 Jev AI 应急自愈表现。
+        </p>
+        <div class="obstacle-btn-grid">
+          <button id="btn-inject-1" class="btn btn-obstacle" data-lines="1">+1 行障碍</button>
+          <button id="btn-inject-2" class="btn btn-obstacle" data-lines="2">+2 行障碍</button>
+          <button id="btn-inject-4" class="btn btn-obstacle btn-obstacle-alert" data-lines="4">+4 行强压</button>
+          <button id="btn-clear-obstacles" class="btn btn-obstacle-clear">清空障碍</button>
+        </div>
+      </div>
+
       <!-- 操作按钮与说明 -->
       <div class="card">
         <div class="btn-group">

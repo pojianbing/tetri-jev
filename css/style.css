@@ -945,3 +945,92 @@ input:checked + .slider:before {
     padding: 16px 0;
   }
 }
+
+/* ==========================================================================
+   实时障碍注入工具组样式 (Live Obstacle Injector)
+   ========================================================================== */
+.obstacle-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-obstacle {
+  background: #151a27;
+  color: #e2e8f0;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 8px 10px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-obstacle:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--secondary-cyan);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-obstacle:active {
+  transform: translateY(1px);
+}
+
+.btn-obstacle-alert {
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.btn-obstacle-alert:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+}
+
+.btn-obstacle-clear {
+  background: #111520;
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 10px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-obstacle-clear:hover {
+  background: #1a2030;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-obstacle-clear:active {
+  transform: translateY(1px);
+}
+
+/* 棋盘注入障碍震颤反馈动画 */
+@keyframes boardShake {
+  0% { transform: translateY(0); }
+  25% { transform: translateY(-4px); }
+  50% { transform: translateY(3px); }
+  75% { transform: translateY(-1px); }
+  100% { transform: translateY(0); }
+}
+
+.shake-animation {
+  animation: boardShake 0.22s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+

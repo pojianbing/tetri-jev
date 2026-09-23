@@ -401,12 +401,6 @@
       if (this.gameOver) return;
       const count = Math.min(linesCount, this.rows);
 
-      // 垃圾行缺口列随机（但相邻同批次通常共用或相邻，保证可解性）
-      if (Math.random() < 0.3) {
-        this.lastGarbageHoleCol = Math.floor(Math.random() * this.cols);
-      }
-      const hole = this.lastGarbageHoleCol;
-
       // 检查顶部是否会被挤爆
       for (let r = 0; r < count; r++) {
         if (this.grid[r].some((cell) => cell !== 0)) {
@@ -418,9 +412,36 @@
       // 向上推移
       this.grid.splice(0, count);
       for (let i = 0; i < count; i++) {
+        if (Math.random() < 0.4 || this.lastGarbageHoleCol === undefined) {
+          this.lastGarbageHoleCol = Math.floor(Math.random() * this.cols);
+        }
+        const hole = this.lastGarbageHoleCol;
         const garbageRow = Array(this.cols).fill('G');
         garbageRow[hole] = 0; // 留出缺口
         this.grid.push(garbageRow);
+      }
+
+      // 若当前下落方块与新升起的障碍发生重叠碰撞，将其向上顺推
+      if (this.currentPiece) {
+        while (
+          this.checkCollision(this.currentPiece.matrix, this.currentPiece.x, this.currentPiece.y) &&
+          this.currentPiece.y > -2
+        ) {
+          this.currentPiece.y--;
+        }
+        if (this.checkCollision(this.currentPiece.matrix, this.currentPiece.x, this.currentPiece.y)) {
+          this.handleTopOut();
+        }
+      }
+    }
+
+    /**
+     * 清空盘面所有已有方块与障碍物
+     */
+    clearObstacles() {
+      if (this.gameOver) return;
+      for (let r = 0; r < this.rows; r++) {
+        this.grid[r].fill(0);
       }
     }
 
