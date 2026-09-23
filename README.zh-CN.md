@@ -8,6 +8,8 @@
 
 本项目基于 [TypeSafe](https://docs.typesafe.ai) 官方设计规范，完整贯彻 **“代码掌管规则（Code in Control），模型赋予直觉（System One Intelligence）”** 的开发范式：由前端物理引擎负责确定性的下落规则与合法候选点枚举，Jev 云端模型在重力时限内提供极速、类型化的战略常识决策。
 
+**在线演示地址：** [https://tetri-jev.vercel.app](https://tetri-jev.vercel.app)
+
 > ⚡ **零本地假玩**：所有 AI 决策 100% 由 TypeSafe 官方云端 Jev 模型实时产出，绝无本地规则替跑。必须配置有效 TypeSafe API Key。
 
 ---
@@ -92,6 +94,8 @@
 ---
 
 ## 快速开始
+
+也可以直接在公网访问体验：👉 **[https://tetri-jev.vercel.app](https://tetri-jev.vercel.app)**，或按以下步骤在本地运行：
 
 ### 环境要求
 - 已安装 Node.js 18+。

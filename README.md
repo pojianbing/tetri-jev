@@ -8,6 +8,8 @@ An adversarial real-time Tetris battle and autonomous player powered by [TypeSaf
 
 This project demonstrates the **"Code in Control + System One Intelligence"** paradigm: deterministic board physics and candidate enumerations are executed in pure code, while Jev provides instant, programmable common-sense decisions under active gravity.
 
+**Live Demo:** [https://tetri-jev.vercel.app](https://tetri-jev.vercel.app)
+
 > ⚡ **Zero Local Mock**: Decisions are 100% powered by the live TypeSafe cloud Jev model. Requires a valid TypeSafe API Key.
 
 ---
@@ -92,6 +94,8 @@ Traditional LLMs (ChatGPT, Claude, etc.) struggle in real-time arcade games due 
 ---
 
 ## Quick Start
+ 
+Try it live instantly at 👉 **[https://tetri-jev.vercel.app](https://tetri-jev.vercel.app)**, or run locally:
 
 ### Prerequisites
 - Node.js 18+ installed.
