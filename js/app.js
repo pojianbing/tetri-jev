@@ -500,6 +500,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       probabilitiesContainer.appendChild(item);
     });
 
+    probabilitiesContainer.classList.toggle('expanded', Boolean(showAllCandidates));
+
     if (btnToggleAllProbs) {
       if (isLargeList) {
         btnToggleAllProbs.style.display = 'flex';
@@ -564,6 +566,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       probabilitiesContainer.appendChild(item);
     });
+
+    probabilitiesContainer.classList.toggle('expanded', Boolean(showAllCandidates));
 
     if (btnToggleAllProbs) {
       if (isLargeList) {

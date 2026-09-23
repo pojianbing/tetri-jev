@@ -289,12 +289,15 @@ body {
   color: #cbd5e1;
 }
 
-/* 中央舞台：游戏棋盘 */
+/* 中央舞台：游戏棋盘 (支持吸顶跟随页面滚动) */
 .stage-center {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+  position: sticky;
+  top: 72px;
+  z-index: 10;
 }
 
 .game-board-container {
@@ -553,6 +556,12 @@ input:checked + .slider:before {
   max-height: 380px;
   overflow-y: auto;
   padding-right: 4px;
+  transition: max-height 0.3s ease;
+}
+
+.probabilities-list.expanded {
+  max-height: none;
+  overflow-y: visible;
 }
 
 .probabilities-list::-webkit-scrollbar {
@@ -878,6 +887,9 @@ input:checked + .slider:before {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+  position: sticky;
+  top: 72px;
+  z-index: 10;
 }
 
 .battle-arenas-container {
