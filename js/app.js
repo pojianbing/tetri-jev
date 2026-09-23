@@ -445,7 +445,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderSingleProbabilities() {
-    if (!lastSingleDecisionData || !lastSingleDecisionData.evalResult.answers.best_placement) return;
+    if (!lastSingleDecisionData || !lastSingleDecisionData.evalResult.answers.best_placement) {
+      renderCandidatePreview();
+      return;
+    }
     const { evalResult, candidates } = lastSingleDecisionData;
     const answers = evalResult.answers;
     const probs = answers.best_placement.probabilities || {};
@@ -494,6 +497,61 @@ document.addEventListener('DOMContentLoaded', async () => {
           btnToggleAllProbs.textContent = '收起其余候选落点 ▴';
         } else {
           btnToggleAllProbs.textContent = `展开查看其余 ${sortedCandidates.length - 5} 个候选落点 ▾`;
+        }
+      } else {
+        btnToggleAllProbs.style.display = 'none';
+      }
+    }
+  }
+
+  /**
+   * 即时渲染当前方块的物理候选落点（用于模式切换时即时响应，解决无刷新感问题）
+   */
+  function renderCandidatePreview() {
+    if (!singleGame || !singleGame.currentPiece) return;
+
+    const cands = CandidateEvaluator.selectCandidatesForJev(singleGame, {
+      mode: currentCandidateMode,
+      maxCandidates: 4,
+    });
+
+    if (candidateCountTag) {
+      const isFull = currentCandidateMode === 'full' || cands.length > 4;
+      candidateCountTag.textContent = isFull ? `(${cands.length} 选项 · 零预选全息)` : `(4 选项 · 精炼推荐)`;
+      candidateCountTag.style.color = isFull ? '#c084fc' : 'var(--secondary-cyan)';
+    }
+
+    const isLargeList = cands.length > 5;
+    const displayList = isLargeList && !showAllCandidates ? cands.slice(0, 5) : cands;
+
+    probabilitiesContainer.innerHTML = '';
+    displayList.forEach((cand, idx) => {
+      const id = cand.id || `placement_${idx + 1}`;
+      const f = cand.features;
+      const detailsText = `消行: ${f.lines_cleared} | 新空洞: ${f.new_holes_created} | 崎岖: ${f.bumpiness_after}`;
+
+      const item = document.createElement('div');
+      item.className = 'prob-item';
+      item.innerHTML = `
+        <div class="prob-fill" style="width: 0%;"></div>
+        <div class="prob-content">
+          <div class="prob-top">
+            <span class="prob-title">${id} (旋 ${f.rotation * 90}°, 列 ${f.target_column}) <span class="chosen-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">全量物理落点</span></span>
+            <span class="prob-pct" style="color: var(--text-dim); font-size: 11px;">待研判</span>
+          </div>
+          <div class="prob-desc">${detailsText}</div>
+        </div>
+      `;
+      probabilitiesContainer.appendChild(item);
+    });
+
+    if (btnToggleAllProbs) {
+      if (isLargeList) {
+        btnToggleAllProbs.style.display = 'flex';
+        if (showAllCandidates) {
+          btnToggleAllProbs.textContent = '收起其余候选落点 ▴';
+        } else {
+          btnToggleAllProbs.textContent = `展开查看其余 ${cands.length - 5} 个候选落点 ▾`;
         }
       } else {
         btnToggleAllProbs.style.display = 'none';
@@ -810,10 +868,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         candidateModeBadge.style.color = mode === 'full' ? '#c084fc' : 'var(--secondary-cyan)';
         candidateModeBadge.style.borderColor = mode === 'full' ? 'rgba(192, 132, 252, 0.4)' : 'rgba(56, 189, 248, 0.25)';
       }
-      if (candidateCountTag) {
-        candidateCountTag.textContent = mode === 'full' ? '(等待全息决策)' : '(4 选项 · 精炼推荐)';
-        candidateCountTag.style.color = mode === 'full' ? '#c084fc' : 'var(--secondary-cyan)';
-      }
+
+      // 即时重绘：无论 AI 是否正在运行，立即根据当前方块呈现对应模式的落点总数与候选结构！
+      renderCandidatePreview();
     });
   });
 
@@ -821,7 +878,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnToggleAllProbs) {
     btnToggleAllProbs.addEventListener('click', () => {
       showAllCandidates = !showAllCandidates;
-      renderSingleProbabilities();
+      if (lastSingleDecisionData && lastSingleDecisionData.candidateMode === currentCandidateMode) {
+        renderSingleProbabilities();
+      } else {
+        renderCandidatePreview();
+      }
     });
   }
 
@@ -959,6 +1020,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         break;
     }
   });
+
+  // 初始渲染当前方块的物理候选落点预览
+  renderCandidatePreview();
 
   // 启动主渲染循环
   requestAnimationFrame(gameLoop);

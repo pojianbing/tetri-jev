@@ -332,7 +332,9 @@
 
       criteriaDict[id] = {
         strategy: strategyTag,
-        details: candidateDict[id],
+        action: candidateDict[id].action,
+        clears_lines: f.lines_cleared,
+        new_holes: f.new_holes_created,
       };
     });
 
