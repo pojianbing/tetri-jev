@@ -102,13 +102,21 @@
      * 向 TypeSafe 官方云端发起 Jev 决策并规划动作
      */
     async thinkAndPlan() {
+      return this.evaluateStep(true);
+    }
+
+    /**
+     * 单步执行 Jev 云端研判
+     * @param {boolean} execute 是否将决策落实为方块物理移动
+     */
+    async evaluateStep(execute = false) {
       this.isThinking = true;
       try {
         const game = this.game;
         const currentPiece = game.currentPiece;
         if (!currentPiece) {
           this.isThinking = false;
-          return;
+          return null;
         }
 
         // 1. 挑选合法候选落点（支持 top4 精炼推荐 或 full 全息零预裁）
@@ -121,9 +129,11 @@
           : CandidateEvaluator.selectTopCandidatesForJev(game, 4, this.opponentGame);
 
         if (candidatesToEvaluate.length === 0) {
-          this.game.tick();
+          if (execute) {
+            this.game.tick();
+          }
           this.isThinking = false;
-          return;
+          return null;
         }
 
         // 2. 打包成 TypeSafe Jev 规范的 State 与 Questions
@@ -168,26 +178,35 @@
         const chosenId = evalResult.answers.best_placement.choice;
         const targetPlacement = candidates.find((c) => c.id === chosenId) || candidates[0];
 
-        // 5. 规划物理操作队列
-        this.planMovement(currentPiece, targetPlacement);
+        // 5. 规划物理操作队列 (若需自动执行)
+        if (execute) {
+          this.planMovement(currentPiece, targetPlacement);
+        }
+
+        const decisionData = {
+          state,
+          questions,
+          evalResult,
+          chosenCandidate: targetPlacement,
+          candidates,
+          candidateMode: this.candidateMode,
+        };
 
         // 6. 回调通知 UI 渲染仪表盘
         if (this.onDecisionMade) {
-          this.onDecisionMade({
-            state,
-            questions,
-            evalResult,
-            chosenCandidate: targetPlacement,
-            candidates,
-            candidateMode: this.candidateMode,
-          });
+          this.onDecisionMade(decisionData);
         }
+
+        return decisionData;
       } catch (err) {
         console.error('Jev 决策调用失败:', err.message);
-        this.setEnabled(false);
+        if (execute) {
+          this.setEnabled(false);
+        }
         if (this.onError) {
           this.onError(err);
         }
+        return null;
       } finally {
         this.isThinking = false;
       }

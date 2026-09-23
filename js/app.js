@@ -82,9 +82,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const candidateCountTag = document.getElementById('candidate-count-tag');
   const btnToggleAllProbs = document.getElementById('btn-toggle-all-probs');
   const moreCandidatesCount = document.getElementById('more-candidates-count');
+  const btnEvalStep = document.getElementById('btn-eval-step');
+  const candidateStatusBanner = document.getElementById('candidate-status-banner');
   let currentCandidateMode = 'top4';
   let showAllCandidates = false;
   let lastSingleDecisionData = null;
+
+  function updateCandidateStatusBanner(type, message) {
+    if (!candidateStatusBanner) return;
+    candidateStatusBanner.className = `status-banner ${type}`;
+    candidateStatusBanner.innerHTML = message;
+  }
 
   // 单人 Jev 监视器
   const decisionLatency = document.getElementById('decision-latency');
@@ -384,6 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 7. 单人模式 Jev 监视器渲染 (1:1 对齐截图细节)
   function handleSingleJevDecision(decisionData) {
+    lastSingleDecisionData = decisionData;
     const { evalResult, candidates } = decisionData;
     const answers = evalResult.answers;
 
@@ -423,6 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ? 'linear-gradient(90deg, #6366f1, #3b82f6)'
           : 'linear-gradient(90deg, #f59e0b, #ef4444)';
 
+      updateCandidateStatusBanner('success', `✓ Jev 云端决策已完成：推荐选择 <strong>${answers.best_placement.choice}</strong>（置信度 ${confPct}%）`);
       renderSingleProbabilities();
     }
 
@@ -505,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   /**
-   * 即时渲染当前方块的物理候选落点（用于模式切换时即时响应，解决无刷新感问题）
+   * 即时渲染当前方块的物理候选落点（用于模式切换或新方块就绪时即时响应）
    */
   function renderCandidatePreview() {
     if (!singleGame || !singleGame.currentPiece) return;
@@ -521,6 +531,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       candidateCountTag.style.color = isFull ? '#c084fc' : 'var(--secondary-cyan)';
     }
 
+    const modeName = currentCandidateMode === 'full' ? '全息零预裁' : '精炼推荐';
+    updateCandidateStatusBanner('info', `💡 当前显示 ${cands.length} 个物理合法落点（${modeName}）。点击【⚡ 立即研判当前步】或上方【启动 Jev 云端自动游玩】，即可获取 Jev 云端真实落点概率！`);
+
     const isLargeList = cands.length > 5;
     const displayList = isLargeList && !showAllCandidates ? cands.slice(0, 5) : cands;
 
@@ -532,16 +545,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const item = document.createElement('div');
       item.className = 'prob-item';
+      item.style.cursor = 'pointer';
+      item.title = '点击即可向 Jev 官方云端发起当前步深度研判';
       item.innerHTML = `
         <div class="prob-fill" style="width: 0%;"></div>
         <div class="prob-content">
           <div class="prob-top">
-            <span class="prob-title">${id} (旋 ${f.rotation * 90}°, 列 ${f.target_column}) <span class="chosen-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">全量物理落点</span></span>
+            <span class="prob-title">${id} (旋 ${f.rotation * 90}°, 列 ${f.target_column}) <span class="chosen-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">物理合法落点</span></span>
             <span class="prob-pct" style="color: var(--text-dim); font-size: 11px;">待研判</span>
           </div>
           <div class="prob-desc">${detailsText}</div>
         </div>
       `;
+
+      item.addEventListener('click', () => {
+        triggerSingleStepEvaluation();
+      });
+
       probabilitiesContainer.appendChild(item);
     });
 
@@ -567,12 +587,56 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnTogglePlay.classList.add('btn-secondary');
       btnTogglePlay.classList.remove('btn-primary');
       aiRunningState.innerHTML = '<span style="color: var(--secondary-cyan);">当前状态：已启用 (正在由 Jev 云端接管)</span>';
+      updateCandidateStatusBanner('thinking', '🤖 Jev 云端自动驾驶已接管，实时深度研判并执行落子...');
     } else {
       btnPlayIcon.textContent = '▶';
       btnPlayText.textContent = '启动 Jev 云端自动游玩';
       btnTogglePlay.classList.add('btn-primary');
       btnTogglePlay.classList.remove('btn-secondary');
       aiRunningState.textContent = '当前状态：已启用 (等待启动)';
+    }
+  }
+
+  let isEvaluatingStep = false;
+  async function triggerSingleStepEvaluation() {
+    if (isEvaluatingStep) return;
+    if (!hasValidKey) {
+      updateCandidateStatusBanner('warn', '⚠️ 未配置 TypeSafe API Key，请先在上方输入 API Key 后进行研判！');
+      keyCard.scrollIntoView({ behavior: 'smooth' });
+      inputApiKey.focus();
+      return;
+    }
+    if (!singleGame || singleGame.gameOver) {
+      updateCandidateStatusBanner('warn', '⚠️ 游戏未开始或已结束，请先开启新局。');
+      return;
+    }
+    if (!singleGame.currentPiece) {
+      updateCandidateStatusBanner('warn', '⚠️ 当前暂无活动方块。');
+      return;
+    }
+
+    isEvaluatingStep = true;
+    if (btnEvalStep) {
+      btnEvalStep.disabled = true;
+      btnEvalStep.textContent = '⚡ 研判中...';
+    }
+    const modeDesc = currentCandidateMode === 'full' ? '全息零预裁' : '精炼推荐';
+    updateCandidateStatusBanner('thinking', `⏳ 正在向 TypeSafe Jev 官方云端发起深度研判 (${modeDesc})...`);
+
+    try {
+      const decisionData = await singleAiController.evaluateStep(false);
+      if (decisionData) {
+        handleSingleJevDecision(decisionData);
+      }
+    } catch (err) {
+      console.error('单步研判失败:', err);
+      updateCandidateStatusBanner('warn', `❌ Jev 研判失败: ${err.message || err}`);
+    } finally {
+      isEvaluatingStep = false;
+      if (btnEvalStep) {
+        btnEvalStep.disabled = false;
+        btnEvalStep.textContent = '⚡ 立即研判当前步';
+      }
     }
   }
 
@@ -625,8 +689,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // 9. 单人模式渲染
+  let lastObservedPiece = null;
   function renderSingleView() {
     renderBoard(singleCtx, singleCanvas, singleGame);
+
+    // 当未开启 AI 自动游玩时，检测方块是否发生变动（下落产生新方块或 hold），自动同步候选落点预览
+    if (!singleAiController.isEnabled && singleGame.currentPiece !== lastObservedPiece) {
+      lastObservedPiece = singleGame.currentPiece;
+      lastSingleDecisionData = null;
+      renderCandidatePreview();
+    }
 
     // 暂存方块显示控制
     if (singleGame.holdPiece) {
@@ -835,12 +907,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   btnTogglePlay.addEventListener('click', toggleSingleAutoPlayAction);
-  toggleAutoPlay.addEventListener('change', toggleSingleAutoPlayAction);
+  if (toggleAutoPlay) toggleAutoPlay.addEventListener('change', toggleSingleAutoPlayAction);
+  function handleResetSingleGame() {
+    singleGame.reset();
+    lastSingleDecisionData = null;
+    lastObservedPiece = null;
+    renderCandidatePreview();
+  }
 
-  btnNewGame.addEventListener('click', () => singleGame.reset());
-  btnRestartOverlay.addEventListener('click', () => singleGame.reset());
+  btnNewGame.addEventListener('click', handleResetSingleGame);
+  btnRestartOverlay.addEventListener('click', handleResetSingleGame);
   btnPause.addEventListener('click', () => (singleGame.isPaused = !singleGame.isPaused));
   btnResumeOverlay.addEventListener('click', () => (singleGame.isPaused = false));
+
+  if (btnEvalStep) {
+    btnEvalStep.addEventListener('click', () => {
+      triggerSingleStepEvaluation();
+    });
+  }
 
   speedButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -897,6 +981,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     singleCanvas.classList.remove('shake-animation');
     void singleCanvas.offsetWidth;
     singleCanvas.classList.add('shake-animation');
+
+    if (!singleAiController.isEnabled) {
+      lastSingleDecisionData = null;
+      renderCandidatePreview();
+    }
   }
 
   if (btnInject1) btnInject1.addEventListener('click', () => handleInjectObstacles(1));
@@ -905,6 +994,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnClearObstacles) {
     btnClearObstacles.addEventListener('click', () => {
       singleGame.clearObstacles();
+      if (!singleAiController.isEnabled) {
+        lastSingleDecisionData = null;
+        renderCandidatePreview();
+      }
     });
   }
 

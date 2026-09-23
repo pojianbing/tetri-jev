@@ -228,7 +228,14 @@
         <div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <div style="font-size: 11px; color: var(--text-dim);">Jev 返回的落点概率分布 (Choice Probabilities)</div>
-            <span id="candidate-count-tag" style="font-size: 10px; color: var(--secondary-cyan); font-family: var(--font-mono);">(4 选项)</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="candidate-count-tag" style="font-size: 10px; color: var(--secondary-cyan); font-family: var(--font-mono);">(4 选项)</span>
+              <button id="btn-eval-step" class="btn-eval-step" title="立即向 Jev 官方云端发起一次落点概率研判">⚡ 立即研判当前步</button>
+            </div>
+          </div>
+          <!-- 状态提示横幅 -->
+          <div id="candidate-status-banner" class="status-banner info">
+            💡 物理合法落点已就绪。点击【⚡ 立即研判当前步】或上方【启动 Jev 云端自动游玩】，即可获取 Jev 云端真实落点概率！
           </div>
           <div id="probabilities-container" class="probabilities-list">
             <div style="font-size: 12px; color: var(--text-dim); padding: 12px; text-align: center; border: 1px dashed rgba(255,255,255,0.06); border-radius: var(--radius-sm);">
