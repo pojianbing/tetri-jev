@@ -6,7 +6,7 @@
 
 基于 [TypeSafe](https://docs.typesafe.ai) **Jev (System One)** 官方决策模型驱动的高对抗性实时俄罗斯方块。支持在 **人机对战模式 (Human vs. Jev)** 中与 Jev 展开基于相同随机序列（7-Bag）与垃圾行攻击/抵消的实时竞技，亦可在 **单人演练模式** 中以毫秒级时延实时观察 Jev 的落点决策分布与认知遥测指标。
 
-本项目参考 [trungdq88/jev-tetris](https://github.com/trungdq88/jev-tetris) 的设计灵感，完整贯彻 **“代码掌管规则（Code in Control），模型赋予直觉（System One Intelligence）”** 的开发范式：由前端物理引擎负责确定性的下落规则与合法候选点枚举，Jev 云端模型在重力时限内提供极速、类型化的战略常识决策。
+本项目基于 [TypeSafe](https://docs.typesafe.ai) 官方设计规范，完整贯彻 **“代码掌管规则（Code in Control），模型赋予直觉（System One Intelligence）”** 的开发范式：由前端物理引擎负责确定性的下落规则与合法候选点枚举，Jev 云端模型在重力时限内提供极速、类型化的战略常识决策。
 
 > ⚡ **零本地假玩**：所有 AI 决策 100% 由 TypeSafe 官方云端 Jev 模型实时产出，绝无本地规则替跑。必须配置有效 TypeSafe API Key。
 

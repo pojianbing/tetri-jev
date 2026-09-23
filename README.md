@@ -6,7 +6,7 @@
 
 An adversarial real-time Tetris battle and autonomous player powered by [TypeSafe](https://docs.typesafe.ai)'s **Jev (System One)** model. Play head-to-head against Jev in **Human vs. Jev Battle Mode** with synchronous 7-bag RNG and real-time garbage row attacks, or observe Jev's split-second typed decisions and live telemetry in **Single-Player Practice Mode**.
 
-Inspired by [trungdq88/jev-tetris](https://github.com/trungdq88/jev-tetris), this project demonstrates the **"Code in Control + System One Intelligence"** paradigm: deterministic board physics and candidate enumerations are executed in pure code, while Jev provides instant, programmable common-sense decisions under active gravity.
+This project demonstrates the **"Code in Control + System One Intelligence"** paradigm: deterministic board physics and candidate enumerations are executed in pure code, while Jev provides instant, programmable common-sense decisions under active gravity.
 
 > ⚡ **Zero Local Mock**: Decisions are 100% powered by the live TypeSafe cloud Jev model. Requires a valid TypeSafe API Key.
 
