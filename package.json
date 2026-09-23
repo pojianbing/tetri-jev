@@ -1,0 +1,13 @@
+{
+  "name": "typesafe-jev-tetris",
+  "version": "1.0.0",
+  "description": "Tetris game automated by TypeSafe AI Jev (System One) model with Battle Mode",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/candidate-test.js && node test/ai-test.js && node test/battle-test.js"
+  },
+  "keywords": ["tetris", "typesafe-ai", "jev", "system-one", "battle-mode"],
+  "author": "",
+  "license": "MIT"
+}

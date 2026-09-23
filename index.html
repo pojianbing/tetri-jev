@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TypeSafe Jev Tetris</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <span class="brand-badge">SYSTEM ONE</span>
+      <h1 class="nav-title">TypeSafe <span>Jev Tetris</span></h1>
+    </div>
+
+    <!-- 模式切换选项卡 -->
+    <div class="mode-switch-tabs">
+      <button id="tab-single" class="mode-tab active">单人演练模式</button>
+      <button id="tab-battle" class="mode-tab">⚔ 人机对战模式 (Human vs. Jev)</button>
+    </div>
+
+    <div class="nav-status">
+      <div id="connection-status-pill" class="status-pill">
+        <span id="status-dot" class="status-dot"></span>
+        <span id="status-text">Jev 官方云端已就绪 (jev-latest)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       视图 1：单人演练模式 (Single Mode)
+       ======================================================================== -->
+  <main id="view-single" class="main-container">
+    <!-- 左侧栏：游戏状态与指标 -->
+    <aside class="sidebar-left">
+      <!-- 暂存方块 -->
+      <div class="card">
+        <div class="card-title">暂存方块 (HOLD)</div>
+        <div class="preview-box">
+          <span id="hold-empty-hint" class="preview-empty-text">暂无持有方块</span>
+          <canvas id="hold-canvas" width="96" height="96" style="display: none;"></canvas>
+        </div>
+      </div>
+
+      <!-- 下一个方块 -->
+      <div class="card">
+        <div class="card-title">下一个方块 (NEXT)</div>
+        <div class="preview-box">
+          <canvas id="next-canvas" width="96" height="96"></canvas>
+        </div>
+      </div>
+
+      <!-- 数据统计 -->
+      <div class="card">
+        <div class="card-title">数据统计</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label">得分</div>
+            <div id="stat-score" class="stat-value">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">消除行数</div>
+            <div id="stat-lines" class="stat-value">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">当前等级</div>
+            <div id="stat-level" class="stat-value">1</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">连击数</div>
+            <div id="stat-combo" class="stat-value">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮与说明 -->
+      <div class="card">
+        <div class="btn-group">
+          <button id="btn-new-game" class="btn btn-primary">重新开始游戏</button>
+          <button id="btn-pause" class="btn btn-secondary">暂停 / 继续</button>
+        </div>
+        <div class="controls-hint-list" style="margin-top: 14px;">
+          <div class="control-hint-row">
+            <span class="key-badge">←</span>
+            <span class="key-badge">→</span>
+            <span class="key-badge">↑</span>
+            <span class="key-badge">↓</span>
+            <span>旋转方块</span>
+          </div>
+          <div class="control-hint-row">
+            <span class="key-badge">↓</span>
+            <span>软降加速</span>
+          </div>
+          <div class="control-hint-row">
+            <span class="key-badge">空格</span>
+            <span>硬降落/放置</span>
+          </div>
+          <div class="control-hint-row">
+            <span class="key-badge">C</span>
+            <span>暂存当前方块</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中央舞台：游戏棋盘 -->
+    <section class="stage-center">
+      <div class="game-board-container">
+        <canvas id="tetris-canvas" width="360" height="720"></canvas>
+        
+        <div id="game-over-overlay" class="overlay-modal hidden">
+          <div class="overlay-title">GAME OVER</div>
+          <p style="color: var(--text-muted); font-size: 14px;">本局最终得分：<span id="final-score" style="color: var(--secondary-cyan); font-weight: bold;">0</span></p>
+          <button id="btn-restart-overlay" class="btn btn-primary" style="margin-top: 12px;">再来一局</button>
+        </div>
+
+        <div id="pause-overlay" class="overlay-modal hidden">
+          <div class="overlay-title" style="color: var(--secondary-cyan);">PAUSED</div>
+          <p style="color: var(--text-muted); font-size: 14px;">游戏已暂停</p>
+          <button id="btn-resume-overlay" class="btn btn-secondary" style="margin-top: 12px;">继续游戏</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右侧栏：TypeSafe Jev AI 认知中心 -->
+    <aside class="sidebar-right">
+      <!-- API Key 配置卡片 -->
+      <div class="card" id="key-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div style="font-size: 13px; font-weight: 700; color: #ffffff;">🔑 TypeSafe API Key (必填)</div>
+          <a href="https://console.typesafe.ai/keys" target="_blank" style="font-size: 11px; color: var(--secondary-cyan); text-decoration: none;">获取密钥 ↗</a>
+        </div>
+        <p style="font-size: 11px; color: var(--text-dim); line-height: 1.4; margin-bottom: 10px;">
+          无本地降级假玩：必须配置真实 API Key，每次下落方块均直接向 TypeSafe 官方云端模型 Jev (System One) 决策。
+        </p>
+        <div style="display: flex; gap: 8px;">
+          <input type="password" id="input-api-key" class="key-input" placeholder="输入 ts-xxxx 或您的 API Key" />
+          <button id="btn-save-key" class="btn btn-primary" style="padding: 7px 12px; font-size: 12px; white-space: nowrap;">保存并测试</button>
+        </div>
+        <div id="key-hint-msg" style="font-size: 11px; margin-top: 6px; color: var(--accent-green); display: block;">
+          ✓ API Key 已配置就绪，可随时开启 Jev 在线潜入托管！
+        </div>
+      </div>
+
+      <!-- 自动托管控制卡片 -->
+      <div class="card">
+        <div class="auto-play-header" style="margin-bottom: 6px;">
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: #ffffff;">Jev AI 自动托管</div>
+            <div id="ai-running-state" style="font-size: 11px; color: var(--secondary-cyan); margin-top: 2px;">当前状态：已启用 (等待启动)</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-autoplay" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button id="btn-toggle-play" class="btn btn-primary" style="width: 100%; margin: 8px 0 10px 0; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span id="btn-play-icon">▶</span> <span id="btn-play-text">启动 Jev 云端自动游玩</span>
+        </button>
+
+        <div class="speed-control" style="margin-bottom: 0;">
+          <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 5px;">托管下落速度</div>
+          <div class="speed-buttons">
+            <button class="speed-btn active" data-speed="slow">慢速观察</button>
+            <button class="speed-btn" data-speed="normal">标准速度</button>
+            <button class="speed-btn" data-speed="fast">极速冲分</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- JEV 云端认知型视器 -->
+      <div class="card decision-monitor">
+        <div class="card-title" style="margin-bottom: 8px;">
+          <span style="font-size: 13px; font-weight: 700; color: #ffffff;">JEV 云端认知型视器</span>
+          <span id="decision-latency" style="font-family: var(--font-mono); font-size: 11px; color: var(--secondary-cyan);">202 MS</span>
+        </div>
+
+        <div class="metric-row">
+          <span class="metric-name">Jev 远程模型</span>
+          <span id="metric-model" class="metric-val" style="color: #c084fc;">jev-1.13.0</span>
+        </div>
+
+        <div class="metric-row">
+          <span class="metric-name">盘面安全评分 (Score)</span>
+          <span id="metric-board-safety" class="metric-val" style="color: #4ade80;">安全 (Safe) (0.01)</span>
+        </div>
+
+        <div class="confidence-box">
+          <div class="confidence-header">
+            <span>云端判决置信度 (Confidence)</span>
+            <span id="val-confidence" style="font-weight: 700; color: #ffffff;">45%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="bar-confidence" class="progress-bar-fill" style="width: 45%;"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px;">Jev 返回的落点概率分布 (Choice Probabilities)</div>
+          <div id="probabilities-container" class="probabilities-list">
+            <!-- 初始占位/决策后动态填充 -->
+            <div class="prob-item">
+              <div class="prob-fill" style="width: 41%;"></div>
+              <div class="prob-content">
+                <div class="prob-top">
+                  <span class="prob-title">placement_1 (旋 0°, 列 6)</span>
+                  <span class="prob-pct">41.0%</span>
+                </div>
+                <div class="prob-desc">消行: 0 | 新空洞: 0 | 崎岖: 0</div>
+              </div>
+            </div>
+            <div class="prob-item chosen">
+              <div class="prob-fill" style="width: 59%;"></div>
+              <div class="prob-content">
+                <div class="prob-top">
+                  <span class="prob-title">placement_2 (旋 90°, 列 0) <span class="chosen-badge">Jev 推荐选择</span></span>
+                  <span class="prob-pct">59.0%</span>
+                </div>
+                <div class="prob-desc">消行: 0 | 新空洞: 0 | 崎岖: 0</div>
+              </div>
+            </div>
+            <div class="prob-item">
+              <div class="prob-fill" style="width: 0%;"></div>
+              <div class="prob-content">
+                <div class="prob-top">
+                  <span class="prob-title">placement_3 (旋 270°, 列 8)</span>
+                  <span class="prob-pct">0.0%</span>
+                </div>
+                <div class="prob-desc">消行: 0 | 新空洞: 0 | 崎岖: 0</div>
+              </div>
+            </div>
+            <div class="prob-item">
+              <div class="prob-fill" style="width: 0%;"></div>
+              <div class="prob-content">
+                <div class="prob-top">
+                  <span class="prob-title">placement_4 (旋 0°, 列 7)</span>
+                  <span class="prob-pct">0.0%</span>
+                </div>
+                <div class="prob-desc">消行: 0 | 新空洞: 0 | 崎岖: 11</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <details class="payload-accordion">
+          <summary>查看发送与接收的真实 System One JSON</summary>
+          <pre id="payload-display" class="payload-code">// 实时展示向 TypeSafe 发送的 state 与官方返回的 answers</pre>
+        </details>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ========================================================================
+       视图 2：人机对战模式 (Battle Arena) - 与首页风格 100% 一致
+       ======================================================================== -->
+  <main id="view-battle" class="battle-main-container" style="display: none;">
+    <!-- 顶部对战大比分牌 -->
+    <div class="battle-scoreboard">
+      <div class="fighter-card">
+        <div class="fighter-avatar human">👤</div>
+        <div>
+          <div class="fighter-name">YOU (人类玩家)</div>
+          <div class="fighter-tag">键盘全键操控 · 实时竞技</div>
+        </div>
+      </div>
+
+      <div class="versus-center">
+        <div class="vs-score-display">
+          <div id="battle-score-human" class="score-box human">0</div>
+          <div class="vs-badge">VS</div>
+          <div id="battle-score-jev" class="score-box jev">0</div>
+        </div>
+        <div id="battle-round-text" class="round-indicator">ROUND 1 · 镜像同步发牌</div>
+      </div>
+
+      <div class="fighter-card" style="flex-direction: row-reverse; text-align: right;">
+        <div class="fighter-avatar jev">🧠</div>
+        <div>
+          <div class="fighter-name">TypeSafe Jev</div>
+          <div class="fighter-tag" style="color: #f472b6;">官方云端智能体 (jev-latest)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 对战三栏主布局 (左侧操作与状态、中央双擂台、右侧AI认知中心) -->
+    <div class="battle-grid-layout">
+      <!-- 左侧栏：人类玩家操作与数据 (与首页左侧栏完全一致) -->
+      <aside class="sidebar-left">
+        <!-- 暂存方块 -->
+        <div class="card">
+          <div class="card-title">人类暂存 (HOLD)</div>
+          <div class="preview-box">
+            <span id="battle-human-hold-hint" class="preview-empty-text">暂无持有方块</span>
+            <canvas id="battle-human-hold" width="96" height="96" style="display: none;"></canvas>
+          </div>
+        </div>
+
+        <!-- 下一个方块 -->
+        <div class="card">
+          <div class="card-title">人类预告 (NEXT)</div>
+          <div class="preview-box">
+            <canvas id="battle-human-next" width="96" height="96"></canvas>
+          </div>
+        </div>
+
+        <!-- 对战数据统计 (与首页四宫格完全一致) -->
+        <div class="card">
+          <div class="card-title">本轮对战数据</div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">人类得分</div>
+              <div id="battle-human-score" class="stat-value">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Jev 得分</div>
+              <div id="battle-jev-score" class="stat-value">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">消除行数</div>
+              <div id="battle-human-lines" class="stat-value">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">当前连击</div>
+              <div id="battle-human-combo" class="stat-value">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 对战控制与操作指南 (与首页操作卡片完全一致) -->
+        <div class="card">
+          <div class="btn-group">
+            <button id="btn-battle-restart" class="btn btn-primary">🔄 重开本轮对战</button>
+            <button id="btn-battle-reset-match" class="btn btn-secondary">清空累计比分</button>
+          </div>
+          <div class="controls-hint-list" style="margin-top: 14px;">
+            <div class="control-hint-row">
+              <span class="key-badge">←</span>
+              <span class="key-badge">→</span>
+              <span class="key-badge">↑</span>
+              <span class="key-badge">↓</span>
+              <span>移动与旋转</span>
+            </div>
+            <div class="control-hint-row">
+              <span class="key-badge">空格</span>
+              <span>硬降落/立即放置</span>
+            </div>
+            <div class="control-hint-row">
+              <span class="key-badge">C</span>
+              <span>暂存当前方块</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 中央舞台：双人竞技擂台 (Human vs. Jev) -->
+      <section class="battle-stage-center">
+        <div class="battle-arenas-container">
+          <!-- 人类战场 -->
+          <div class="arena-board-card human-side">
+            <div class="arena-player-bar">
+              <div class="arena-player-title" style="color: var(--secondary-cyan);">
+                <span>👤 YOU (人类战场)</span>
+                <span id="human-combo-tag" style="font-size: 11px; background: rgba(56,189,248,0.2); padding: 2px 6px; border-radius: 4px; display: none;">COMBO 2</span>
+              </div>
+            </div>
+            <div class="arena-board-row">
+              <div class="garbage-meter" title="即将接收的垃圾行缓冲槽">
+                <div id="human-garbage-bar" class="garbage-bar-fill"></div>
+              </div>
+              <div class="game-board-container">
+                <canvas id="battle-human-canvas" width="320" height="640"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- 中央对决特效地带 (VS Zone) -->
+          <div class="battle-center-divider">
+            <div class="attack-beam-zone" id="attack-beam-zone">
+              <div class="vs-glow-text">⚡ VS ⚡</div>
+              <div class="vs-sub-desc">
+                消除多行发射垃圾行<br>消行优先相互抵消
+              </div>
+            </div>
+          </div>
+
+          <!-- Jev AI 战场 -->
+          <div class="arena-board-card jev-side">
+            <div class="arena-player-bar">
+              <div class="arena-player-title" style="color: #f472b6;">
+                <span>🧠 TypeSafe Jev (AI 战场)</span>
+                <span id="jev-battle-status-tag" style="font-size: 11px; background: rgba(244,114,182,0.2); padding: 2px 6px; border-radius: 4px; color: #f472b6;">云端推理</span>
+              </div>
+            </div>
+            <div class="arena-board-row">
+              <div class="game-board-container jev-glow">
+                <canvas id="battle-jev-canvas" width="320" height="640"></canvas>
+              </div>
+              <div class="garbage-meter" title="Jev 即将接收的垃圾行缓冲槽">
+                <div id="jev-garbage-bar" class="garbage-bar-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 悬浮微型 Jev 方块信息条 (HOLD & NEXT) -->
+        <div class="jev-mini-previews">
+          <div class="jev-mini-item">
+            <span style="font-size: 11px; color: var(--text-dim);">Jev HOLD:</span>
+            <div class="preview-box" style="width: 52px; height: 52px;">
+              <canvas id="battle-jev-hold" width="52" height="52"></canvas>
+            </div>
+          </div>
+          <div class="jev-mini-item">
+            <span style="font-size: 11px; color: var(--text-dim);">Jev NEXT:</span>
+            <div class="preview-box" style="width: 52px; height: 52px;">
+              <canvas id="battle-jev-next" width="52" height="52"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右侧栏：TypeSafe Jev AI 认知中心 (与首页右侧栏 100% 一致) -->
+      <aside class="sidebar-right">
+        <!-- 战术态势感知卡片 -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom: 8px;">
+            <span style="font-size: 13px; font-weight: 700; color: #ffffff;">⚔️ Jev 对战攻防态势</span>
+            <span id="battle-jev-confidence-tag" style="font-family: var(--font-mono); font-size: 11px; color: var(--secondary-cyan);">置信度 0%</span>
+          </div>
+          <div id="battle-strategy-text" style="font-size: 12px; color: var(--secondary-cyan); background: #0b0e14; padding: 10px 12px; border-radius: var(--radius-md); border: 1px solid var(--bg-card-border); line-height: 1.5;">
+            对战就绪，等待下落决策...
+          </div>
+        </div>
+
+        <!-- JEV 云端认知型监视器 (对齐首页风格) -->
+        <div class="card decision-monitor">
+          <div class="card-title" style="margin-bottom: 8px;">
+            <span style="font-size: 13px; font-weight: 700; color: #ffffff;">JEV 云端认知型视器</span>
+            <span id="jev-battle-latency" style="font-family: var(--font-mono); font-size: 11px; color: var(--secondary-cyan);">0 MS</span>
+          </div>
+
+          <div class="metric-row">
+            <span class="metric-name">Jev 远程模型</span>
+            <span class="metric-val" style="color: #c084fc;">jev-latest</span>
+          </div>
+
+          <div class="metric-row">
+            <span class="metric-name">防守紧迫度 (Defense Priority)</span>
+            <span id="battle-metric-priority" class="metric-val" style="color: #4ade80;">NORMAL</span>
+          </div>
+
+          <div class="confidence-box">
+            <div class="confidence-header">
+              <span>云端判决置信度 (Confidence)</span>
+              <span id="battle-confidence-num" style="font-weight: 700; color: #ffffff;">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div id="battle-bar-confidence" class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px;">Jev 返回的落点概率分布 (Choice Probabilities)</div>
+            <div id="battle-probabilities-list" class="probabilities-list">
+              <div style="font-size: 12px; color: var(--text-dim); padding: 8px 0;">等待 Jev 云端决策...</div>
+            </div>
+          </div>
+
+          <details class="payload-accordion">
+            <summary>查看发送与接收的真实 System One 对战 JSON</summary>
+            <pre id="battle-payload-display" class="payload-code">// 实时展示向 TypeSafe 发送的 battle state 与官方返回的 answers</pre>
+          </details>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 对战结算浮层 -->
+    <div id="battle-overlay" class="battle-round-overlay hidden">
+      <div id="battle-result-title" class="victory-title human-win">VICTORY!</div>
+      <p id="battle-result-desc" style="color: var(--text-main); font-size: 16px; margin-top: 4px;">你成功击败了 TypeSafe Jev！</p>
+      <div style="display: flex; gap: 14px; margin-top: 16px;">
+        <button id="btn-next-round" class="btn btn-primary" style="padding: 10px 24px; font-size: 14px;">进入下一轮 (Next Round)</button>
+        <button id="btn-exit-battle" class="btn btn-secondary">退出对战</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 脚本加载 -->
+  <script src="js/tetris.js"></script>
+  <script src="js/candidate.js"></script>
+  <script src="js/jev-client.js"></script>
+  <script src="js/ai-controller.js"></script>
+  <script src="js/battle-manager.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
